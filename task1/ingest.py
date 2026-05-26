@@ -1,22 +1,3 @@
-# ============================================================
-# ingest.py — FastAPI Documentation RAG Ingestion Script
-# ============================================================
-# What this file does:
-#   1. Reads every .md file from the FastAPI docs folder
-#   2. Splits each file into small chunks of text
-#   3. Converts each chunk into numbers (embeddings)
-#   4. Saves everything into ChromaDB (a database on your computer)
-#
-# You run this file ONCE. After it finishes, your database is ready
-# and your app can search it instantly.
-#
-# To run: python ingest.py
-# ============================================================
-
-
-# --- IMPORTS ---
-# These are the libraries you installed with pip install
-
 print("Script started")
 
 import os                        # built-in Python — lets us work with files and folders
