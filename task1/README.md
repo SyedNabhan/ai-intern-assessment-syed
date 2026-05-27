@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 # Multi-Framework RAG Documentation Assistant
+=======
+﻿# Multi-Framework RAG Documentation Assistant
+>>>>>>> 43e5473 (Project Screenshot Added)
 
+![Project Screenshot](Project 1 Screenshot.png)
 
 
 An AI-powered documentation assistant built using Retrieval-Augmented Generation (RAG) that answers questions about FastAPI and LangChain documentation with grounded responses and source citations.
