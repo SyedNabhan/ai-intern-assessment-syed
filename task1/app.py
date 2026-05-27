@@ -19,7 +19,6 @@ CHROMA_DB_PATH     = "./chroma_db"
 COLLECTION_NAME    = "fastapi_docs"
 TOP_K              = 10
 TOP_K_RERANKED     = 5
-RELEVANCE_THRESHOLD = -5.0
 
 
 # ============================================================
@@ -187,23 +186,13 @@ If the question is already good, return it as-is."""
     )
     return resp.choices[0].message.content.strip()
 
-
 def generate_answer(groq_client, question, chunks):
-    """Generate answer with citations from chunks."""
 
-    # Refusal check
+    # Only refuse if there are truly no chunks at all
     if not chunks:
         return "I could not find any relevant information in the FastAPI documentation.", []
 
-    best_score = chunks[0].get("reranker_score", 0)
-    if best_score < RELEVANCE_THRESHOLD:
-        return (
-            "I could not find an answer to this question in the FastAPI documentation. "
-            "This topic may not be covered, or try rephrasing your question.",
-            []
-        )
-
-    # Build context
+    # Build context — number each chunk clearly
     context_parts = []
     for i, chunk in enumerate(chunks, start=1):
         context_parts.append(
@@ -212,17 +201,17 @@ def generate_answer(groq_client, question, chunks):
     context = "\n\n".join(context_parts)
 
     system = """You are a helpful FastAPI documentation assistant.
-Answer questions using ONLY the provided documentation chunks.
-After each sentence, add citation numbers like [1] or [2] showing which chunk it came from.
-If the answer is not in the chunks, say: "I could not find this in the provided documentation."
-Never make up information. Be clear and concise. Use code examples when available."""
+You MUST answer the question using the provided documentation chunks.
+Always cite which chunk you used like [1] or [2] after each sentence.
+Even if the chunks only partially answer the question, use what is there.
+Never say you cannot find something if the chunks contain relevant content."""
 
     user = f"""Question: {question}
 
-Documentation chunks:
+Here are the documentation chunks to use:
 {context}
 
-Answer the question using only the chunks above. Add [1][2] citations after each claim."""
+Answer the question using the chunks above. Cite with [1][2] etc."""
 
     resp = groq_client.chat.completions.create(
         model=GROQ_MODEL,
@@ -233,7 +222,9 @@ Answer the question using only the chunks above. Add [1][2] citations after each
         temperature=0.2,
         max_tokens=1000
     )
-    return resp.choices[0].message.content.strip(), chunks
+
+    answer = resp.choices[0].message.content.strip()
+    return answer, chunks
 
 
 def run_full_pipeline(question, mode, collection, bm25_index,
@@ -322,7 +313,7 @@ def render_answer_with_citations(answer, used_chunks):
     and then lists the sources below it.
     """
     # TASK 5 — REFUSAL: show warning box for out-of-scope questions
-    if not used_chunks:
+    if not used_chunks or "could not find" in answer.lower():
         st.warning(answer)
         return
 
