@@ -1,4 +1,4 @@
-﻿Task 1 files g# Multi-Framework RAG Documentation Assistant
+# Multi-Framework RAG Documentation Assistant
 
 
 
