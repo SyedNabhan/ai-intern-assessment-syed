@@ -1,8 +1,5 @@
-<<<<<<< HEAD
-# Multi-Framework RAG Documentation Assistant
-=======
 ﻿# Multi-Framework RAG Documentation Assistant
->>>>>>> 43e5473 (Project Screenshot Added)
+(Project Screenshot Added)
 
 ![Project Screenshot](Project 1 Screenshot.png)
 
