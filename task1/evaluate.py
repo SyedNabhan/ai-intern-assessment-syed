@@ -29,7 +29,7 @@ RERANKER_MODEL     = os.getenv("RERANKER_MODEL",  "cross-encoder/ms-marco-MiniLM
 GROQ_API_KEY       = os.getenv("GROQ_API_KEY")
 GROQ_MODEL         = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 CHROMA_DB_PATH     = "./chroma_db"
-COLLECTION_NAME    = "fastapi_docs"
+COLLECTION_NAME    = "nulti_docs"
 TOP_K              = 10
 TOP_K_RERANKED     = 5
 

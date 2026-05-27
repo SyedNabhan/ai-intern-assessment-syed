@@ -1,3 +1,6 @@
+# --- IMPORTS ---
+# These are the libraries you installed with pip install
+
 print("Script started")
 
 import os                        # built-in Python — lets us work with files and folders
@@ -23,29 +26,38 @@ EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM
 # ↑ os.getenv reads a value from .env. The second argument is a default value
 #   if the key is not found in .env
 
-DOCS_PATH = "fastapi/docs/en/docs"
-# ↑ This is the folder where the FastAPI .md files live
+DOCS_PATH = [
+    "fastapi/docs/en/docs",
+    "langchain_v1"
+]
+# ↑ This is the folder where the FastAPI .md and Langchain.md files live
 #   Change this if your folder structure is different
 
 CHROMA_DB_PATH = "./chroma_db"
 # ↑ This is where ChromaDB will save the database on your computer
 #   A folder called "chroma_db" will be created in your task1 folder
 
-COLLECTION_NAME = "fastapi_docs"
+COLLECTION_NAME = "multi_docs"
 # ↑ Think of a collection like a table in a database — it holds all your chunks
 
 
 # --- STEP 1: FIND ALL .md FILES ---
 def find_markdown_files(docs_path):
     """
-    Finds every .md file in the given folder and all its subfolders.
+    Finds every .md and .mdx file in the given folder
+    and all its subfolders.
+
     Returns a list of file paths.
     """
-    # glob.glob with ** and recursive=True searches ALL subfolders
+
+    # Find all .md files
+     # Search only for .md files
     pattern = os.path.join(docs_path, "**", "*.md")
+
     files = glob.glob(pattern, recursive=True)
 
     print(f"Found {len(files)} markdown files in {docs_path}")
+
     return files
 
 
@@ -94,10 +106,18 @@ def create_chunks(text, file_path):
     # This is how citations work — we know which file each answer came from
     metadatas = []
     for i, chunk in enumerate(chunks):
+        if "fastapi" in file_path.lower():
+            framework = "FastAPI"
+        elif "langchain" in file_path.lower():
+            framework = "LangChain"
+        else:
+            framework = "Unknown"
+
         metadatas.append({
-            "source": file_path,           # full file path
-            "filename": os.path.basename(file_path),  # just the filename e.g. "tutorial.md"
-            "chunk_index": i               # which chunk number within this file
+            "source": file_path,
+            "filename": os.path.basename(file_path),
+            "framework": framework,
+            "chunk_index": i             # which chunk number within this file
         })
 
     return chunks, metadatas
@@ -176,12 +196,21 @@ def main():
     print("=" * 50)
 
     # Step 1: Find all .md files
-    files = find_markdown_files(DOCS_PATH)
+    # Step 1: Find all .md files from all doc sources
+    files = []
+
+    for path in DOCS_PATH:
+        print(f"\nScanning docs from: {path}")
+
+        found_files = find_markdown_files(path)
+
+        if len(found_files) == 0:
+            print(f"WARNING: No markdown files found in {path}")
+        else:
+            files.extend(found_files)
 
     if len(files) == 0:
-        print("ERROR: No .md files found!")
-        print(f"Make sure the FastAPI docs are at: {DOCS_PATH}")
-        print("Run: git clone https://github.com/tiangolo/fastapi")
+        print("ERROR: No markdown files found in any docs folder!")
         return
 
     # Step 2: Set up the database
@@ -231,11 +260,6 @@ def main():
     print(f"Total chunks saved    : {len(all_chunks)}")
     print(f"Database saved at     : {CHROMA_DB_PATH}")
     print("=" * 50)
-    print("\nYou can now build retrieval.py on top of this database.")
-
-
-# --- RUN THE SCRIPT ---
-# This line means: only run main() if you run this file directly
-# (not if another file imports it)
+    
 if __name__ == "__main__":
     main()

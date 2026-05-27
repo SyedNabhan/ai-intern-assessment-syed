@@ -1,0 +1,14 @@
+chromadb
+sentence-transformers
+rank-bm25
+groq
+streamlit
+python-dotenv
+numpy
+ragas
+datasets
+pandas
+scikit-learn
+tqdm
+torch
+transformers

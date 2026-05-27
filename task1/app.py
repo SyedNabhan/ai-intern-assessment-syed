@@ -18,7 +18,7 @@ RERANKER_MODEL     = os.getenv("RERANKER_MODEL",  "cross-encoder/ms-marco-MiniLM
 GROQ_API_KEY       = os.getenv("GROQ_API_KEY")
 GROQ_MODEL         = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 CHROMA_DB_PATH     = "./chroma_db"
-COLLECTION_NAME    = "fastapi_docs"
+COLLECTION_NAME    = "multi_docs"
 TOP_K              = 10
 TOP_K_RERANKED     = 5
 
@@ -27,7 +27,7 @@ TOP_K_RERANKED     = 5
 # PAGE CONFIG — must be the very first Streamlit command
 # ============================================================
 st.set_page_config(
-    page_title="FastAPI Docs Assistant",
+    page_title="Multi-Docs Assistant",
     page_icon="⚡",
     layout="wide",
     # wide layout gives us room for the sidebar + main content
@@ -297,6 +297,7 @@ def render_sidebar(used_chunks, mode, rewritten_query):
 
             # st.expander creates a collapsible section
             with st.expander(f"[{i}] {chunk['source']}  {score_color} {score}"):
+                st.caption(f"Framework: `{chunk.get('framework', 'Unknown')}`")
                 st.caption(f"File: `{chunk['source']}`")
                 st.caption(f"Reranker score: `{score}`")
                 if "vector_score" in chunk:
@@ -338,8 +339,8 @@ def render_answer_with_citations(answer, used_chunks):
 def main():
 
     # ── APP HEADER ───────────────────────────────────────────
-    st.title("⚡ FastAPI Documentation Assistant")
-    st.caption("Ask any question about FastAPI. Answers come with citations from the official docs.")
+    st.title("📚 Multi-Framework Documentation Assistant")
+    st.caption("Ask questions about FastAPI and LangChain documentation with citation-based answers.")
     st.divider()
 
     # ── LOAD RESOURCES ───────────────────────────────────────
@@ -389,7 +390,7 @@ def main():
     # ── CHAT INPUT ───────────────────────────────────────────
     # st.chat_input creates the text box at the bottom of the screen
     # It returns the user's message when they press Enter
-    question = st.chat_input("Ask a question about FastAPI...")
+    question = st.chat_input("Ask a question about FastAPI or LangChain...")
 
     if question:
         # Show the user's message in the chat
