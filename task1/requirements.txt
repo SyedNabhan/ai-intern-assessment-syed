@@ -1,14 +1,29 @@
-chromadb
-sentence-transformers
-rank-bm25
-groq
-streamlit
-python-dotenv
-numpy
-ragas
-datasets
-pandas
-scikit-learn
-tqdm
-torch
-transformers
+# Core RAG
+chromadb==0.5.3
+sentence-transformers==2.7.0
+rank-bm25==0.2.2
+torch==2.2.2
+transformers==4.41.2
+ 
+# LLM
+groq==0.9.0
+ 
+# LangChain (pinned to work with ragas==0.1.9)
+langchain==0.1.20
+langchain-core==0.1.52
+langchain-community==0.0.38
+langchain-groq==0.1.3
+ 
+# RAGAS evaluation
+ragas==0.1.9
+datasets==2.19.0
+ 
+# UI
+streamlit==1.35.0
+ 
+# Utilities
+python-dotenv==1.0.1
+numpy==1.26.4
+pandas==2.2.2
+scikit-learn==1.4.2
+tqdm==4.66.4
