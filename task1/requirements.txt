@@ -1,8 +1,4 @@
 chromadb
-sentence-transformers
-rank-bm25
-groq
-streamlit
 python-dotenv
 numpy
 ragas
@@ -12,3 +8,9 @@ scikit-learn
 tqdm
 torch
 transformers
+sentence-transformers==2.7.0
+chromadb==0.5.0
+rank-bm25==0.2.2
+langchain==0.2.0
+streamlit==1.35.0
+groq==0.9.0
