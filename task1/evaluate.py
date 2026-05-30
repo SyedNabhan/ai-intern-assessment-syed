@@ -1,8 +1,10 @@
-
 import os
 import json
 import time
+
 from dotenv import load_dotenv
+load_dotenv()
+
 import chromadb
 from chromadb.utils import embedding_functions
 from rank_bm25 import BM25Okapi
@@ -10,42 +12,65 @@ import numpy as np
 from sentence_transformers import CrossEncoder
 from groq import Groq
 
-# RAGAS imports
+# ── RAGAS + LangChain imports ────────────────────────────────
 from ragas import evaluate
 from ragas.metrics import faithfulness, answer_relevancy, context_precision
-# faithfulness     — does the answer stick to the retrieved chunks?
-# answer_relevancy — does the answer actually answer the question?
-# context_precision — were the retrieved chunks relevant to the question?
-
+from ragas.llms import LangchainLLMWrapper
+from ragas.embeddings import LangchainEmbeddingsWrapper
+from langchain_groq import ChatGroq
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from datasets import Dataset
-# Dataset is a HuggingFace library that RAGAS needs to format the data
-
-
-# --- LOAD ENVIRONMENT VARIABLES ---
-load_dotenv()
-
-EMBEDDING_MODEL    = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-RERANKER_MODEL     = os.getenv("RERANKER_MODEL",  "cross-encoder/ms-marco-MiniLM-L-6-v2")
-GROQ_API_KEY       = os.getenv("GROQ_API_KEY")
-GROQ_MODEL         = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
-CHROMA_DB_PATH     = "./chroma_db"
-COLLECTION_NAME    = "nulti_docs"
-TOP_K              = 10
-TOP_K_RERANKED     = 5
-
-# Output file where results are saved
-RESULTS_FILE       = "results.json"
+# ─────────────────────────────────────────────────────────────
 
 
 # ============================================================
-# STEP 1 — LOAD ALL RESOURCES
+# CONFIG
+# ============================================================
+EMBEDDING_MODEL  = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+RERANKER_MODEL   = os.getenv("RERANKER_MODEL",  "cross-encoder/ms-marco-MiniLM-L-6-v2")
+GROQ_API_KEY     = os.getenv("GROQ_API_KEY")
+GROQ_MODEL       = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+CHROMA_DB_PATH   = "./chroma_db"
+COLLECTION_NAME  = "multi_docs"
+TOP_K            = 10
+TOP_K_RERANKED   = 5
+RESULTS_FILE     = "results.json"
+
+
+# ============================================================
+# STEP 1 — CONFIGURE RAGAS TO USE GROQ (not OpenAI)
+# ============================================================
+def configure_ragas():
+    """
+    By default RAGAS calls OpenAI. This function points it at
+    Groq (Llama 3.3 70B) and uses a local HuggingFace embedding
+    model so no OpenAI key is needed at all.
+    """
+    print("Configuring RAGAS to use Groq...")
+
+    groq_llm = LangchainLLMWrapper(ChatGroq(
+        model=GROQ_MODEL,
+        api_key=GROQ_API_KEY,
+    ))
+
+    hf_embeddings = LangchainEmbeddingsWrapper(HuggingFaceEmbeddings(
+        model_name=EMBEDDING_MODEL
+    ))
+
+    # Point every metric at Groq + local embeddings
+    faithfulness.llm            = groq_llm
+    answer_relevancy.llm        = groq_llm
+    answer_relevancy.embeddings = hf_embeddings
+    context_precision.llm       = groq_llm
+
+    print("  RAGAS configured — using Groq + HuggingFace embeddings")
+
+
+# ============================================================
+# STEP 2 — LOAD RESOURCES
 # ============================================================
 def load_resources():
-    """
-    Loads ChromaDB, BM25 index, reranker, and Groq client.
-    Same as in app.py but without Streamlit caching.
-    """
-    print("Loading ChromaDB...")
+    print("\nLoading ChromaDB...")
     client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
     embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
         model_name=EMBEDDING_MODEL
@@ -77,9 +102,8 @@ def load_resources():
 
 
 # ============================================================
-# STEP 2 — PIPELINE FUNCTIONS (same as retrieval.py)
+# STEP 3 — PIPELINE FUNCTIONS
 # ============================================================
-
 def vector_search(collection, question, top_k=TOP_K):
     results      = collection.query(
         query_texts=[question],
@@ -121,9 +145,9 @@ def hybrid_search(collection, bm25_index, all_chunks, all_metadatas, all_ids, qu
     vector_results = vector_search(collection, question, top_k=top_k)
     bm25_results   = bm25_search(bm25_index, all_chunks, all_metadatas, all_ids, question, top_k=top_k)
 
-    bm25_scores      = [r["score"] for r in bm25_results]
-    max_bm25         = max(bm25_scores) if max(bm25_scores) > 0 else 1
-    bm25_score_map   = {r["id"]: round(r["score"] / max_bm25, 4) for r in bm25_results}
+    bm25_scores    = [r["score"] for r in bm25_results]
+    max_bm25       = max(bm25_scores) if max(bm25_scores) > 0 else 1
+    bm25_score_map = {r["id"]: round(r["score"] / max_bm25, 4) for r in bm25_results}
 
     vector_scores    = [r["score"] for r in vector_results]
     max_vector       = max(vector_scores) if max(vector_scores) > 0 else 1
@@ -141,8 +165,8 @@ def hybrid_search(collection, bm25_index, all_chunks, all_metadatas, all_ids, qu
 
     hybrid_results = []
     for cid in all_ids_set:
-        v = vector_score_map.get(cid, 0.0)
-        b = bm25_score_map.get(cid, 0.0)
+        v     = vector_score_map.get(cid, 0.0)
+        b     = bm25_score_map.get(cid, 0.0)
         chunk = all_chunks_map[cid]
         hybrid_results.append({
             "id":     cid,
@@ -165,7 +189,7 @@ def rerank(reranker, question, results, top_k=TOP_K_RERANKED):
 
 
 def rewrite_query(groq_client, question):
-    system = """You are a search query optimizer for a FastAPI documentation assistant.
+    system = """You are a search query optimizer for a documentation assistant.
 Rewrite the user question into a better search query.
 Return ONLY the rewritten query. No explanation. Under 15 words.
 If the question is already good, return it as-is."""
@@ -182,16 +206,15 @@ If the question is already good, return it as-is."""
 
 
 def generate_answer(groq_client, question, chunks):
-    """Generate answer with citations. Returns answer string and used chunks."""
     if not chunks:
-        return "I could not find any relevant information in the FastAPI documentation.", []
+        return "I could not find any relevant information in the documentation.", []
 
     context_parts = []
     for i, chunk in enumerate(chunks, start=1):
         context_parts.append(f"[{i}] Source: {chunk['source']}\n{chunk['text']}")
     context = "\n\n".join(context_parts)
 
-    system = """You are a helpful FastAPI documentation assistant.
+    system = """You are a helpful documentation assistant.
 Answer questions using ONLY the provided documentation chunks.
 After each sentence add citation numbers like [1] or [2].
 If the answer is not in the chunks say: I could not find this in the provided documentation.
@@ -218,140 +241,93 @@ Answer using only the chunks above. Add [1][2] citations."""
 
 def run_pipeline(question, collection, bm25_index, all_chunks,
                  all_metadatas, all_ids, reranker, groq_client):
-    """
-    Runs the full pipeline for one question.
-    Returns: answer string, list of context strings, list of source filenames
-    """
-    # Step 1: Rewrite query
-    rewritten = rewrite_query(groq_client, question)
-
-    # Step 2: Hybrid search
+    rewritten      = rewrite_query(groq_client, question)
     hybrid_results = hybrid_search(
         collection, bm25_index, all_chunks,
         all_metadatas, all_ids, rewritten, top_k=TOP_K
     )
-
-    # Step 3: Rerank
-    reranked = rerank(reranker, question, hybrid_results, top_k=TOP_K_RERANKED)
-
-    # Step 4: Generate answer
-    answer, used_chunks = generate_answer(groq_client, question, reranked)
-
-    # Extract just the text from each chunk for RAGAS
-    # RAGAS needs contexts as a list of strings — not dicts
-    contexts = [chunk["text"] for chunk in used_chunks]
-    sources  = [chunk["source"] for chunk in used_chunks]
-
+    reranked       = rerank(reranker, question, hybrid_results, top_k=TOP_K_RERANKED)
+    answer, used   = generate_answer(groq_client, question, reranked)
+    contexts       = [chunk["text"] for chunk in used]
+    sources        = [chunk["source"] for chunk in used]
     return answer, contexts, sources, rewritten
 
 
 # ============================================================
-# STEP 3 — READ QUESTIONS FROM questions.json
+# STEP 4 — LOAD QUESTIONS
 # ============================================================
 def load_questions(filepath="questions.json"):
-    """
-    Reads the questions.json file and returns the list of questions.
-    """
     print(f"\nLoading questions from {filepath}...")
-
     with open(filepath, "r", encoding="utf-8") as f:
         data = json.load(f)
-
     questions = data["questions"]
     print(f"  Loaded {len(questions)} questions")
     return questions
 
 
 # ============================================================
-# STEP 4 — RUN ALL QUESTIONS THROUGH THE PIPELINE
+# STEP 5 — RUN ALL QUESTIONS THROUGH THE PIPELINE
 # ============================================================
 def collect_results(questions, collection, bm25_index, all_chunks,
                     all_metadatas, all_ids, reranker, groq_client):
-    """
-    Loops through all 25 questions, runs each through the pipeline,
-    and collects results in the format RAGAS expects.
-
-    RAGAS needs 4 lists of equal length:
-    - questions:   the original questions
-    - answers:     your system's generated answers
-    - contexts:    list of retrieved chunk texts for each question
-    - ground_truths: the expected answers from questions.json
-
-    Out-of-scope questions (expected_answer = "NOT_IN_DOCS") are
-    handled separately — we check if the system correctly refused.
-    """
-
-    # These lists will be passed to RAGAS
-    ragas_questions    = []  # questions to evaluate (in-scope only)
-    ragas_answers      = []  # your system's answers
-    ragas_contexts     = []  # retrieved chunks for each question
-    ragas_ground_truths = [] # expected answers from questions.json
-
-    # These track out-of-scope question performance separately
+    ragas_questions     = []
+    ragas_answers       = []
+    ragas_contexts      = []
+    ragas_ground_truths = []
     out_of_scope_results = []
-
-    # This saves ALL results for your results.json file
-    all_results = []
+    all_results          = []
 
     print(f"\n{'='*55}")
     print(f"Running pipeline on {len(questions)} questions...")
     print(f"{'='*55}")
 
     for i, q in enumerate(questions, start=1):
-        question_text    = q["question"]
-        expected_answer  = q["expected_answer"]
-        category         = q["category"]
+        question_text   = q["question"]
+        expected_answer = q["expected_answer"]
+        category        = q["category"]
 
-        print(f"\n[{i}/25] {category.upper()}: {question_text[:60]}...")
+        print(f"\n[{i}/{len(questions)}] {category.upper()}: {question_text[:60]}...")
 
         try:
-            # Run the full pipeline
             answer, contexts, sources, rewritten = run_pipeline(
                 question_text, collection, bm25_index, all_chunks,
                 all_metadatas, all_ids, reranker, groq_client
             )
 
-            print(f"  Rewritten: {rewritten[:50]}...")
-            print(f"  Sources:   {', '.join(sources[:3])}")
-            print(f"  Answer:    {answer[:80]}...")
+            print(f"  Rewritten : {rewritten[:50]}...")
+            print(f"  Sources   : {', '.join(sources[:3])}")
+            print(f"  Answer    : {answer[:80]}...")
 
-            # ── OUT OF SCOPE HANDLING ────────────────────────
             if category == "out_of_scope":
-                # Check if the system correctly refused
                 refused = (
                     "could not find" in answer.lower() or
                     "not in" in answer.lower() or
+                    "don't have" in answer.lower() or
                     len(contexts) == 0
                 )
                 out_of_scope_results.append({
-                    "question": question_text,
+                    "question":          question_text,
                     "correctly_refused": refused,
-                    "answer": answer
+                    "answer":            answer
                 })
-                print(f"  Refusal test: {'✅ PASSED' if refused else '❌ FAILED — should have refused'}")
-
-                # Save to all_results but skip RAGAS (out-of-scope has no ground truth)
+                print(f"  Refusal test: {'✅ PASSED' if refused else '❌ FAILED'}")
                 all_results.append({
-                    "id":               q["id"],
-                    "category":         category,
-                    "question":         question_text,
-                    "expected_answer":  expected_answer,
-                    "generated_answer": answer,
-                    "sources":          sources,
-                    "rewritten_query":  rewritten,
+                    "id":                q["id"],
+                    "category":          category,
+                    "question":          question_text,
+                    "expected_answer":   expected_answer,
+                    "generated_answer":  answer,
+                    "sources":           sources,
+                    "rewritten_query":   rewritten,
                     "correctly_refused": refused,
                     "included_in_ragas": False
                 })
-                # ────────────────────────────────────────────
 
             else:
-                # ── IN-SCOPE QUESTIONS → add to RAGAS data ──
                 ragas_questions.append(question_text)
                 ragas_answers.append(answer)
                 ragas_contexts.append(contexts)
-                # RAGAS needs ground_truths as a list of strings
                 ragas_ground_truths.append(expected_answer)
-
                 all_results.append({
                     "id":               q["id"],
                     "category":         category,
@@ -362,10 +338,8 @@ def collect_results(questions, collection, bm25_index, all_chunks,
                     "rewritten_query":  rewritten,
                     "included_in_ragas": True
                 })
-                # ────────────────────────────────────────────
 
         except Exception as e:
-            # If one question fails, don't crash the whole evaluation
             print(f"  ERROR on question {i}: {e}")
             all_results.append({
                 "id":       q["id"],
@@ -374,87 +348,51 @@ def collect_results(questions, collection, bm25_index, all_chunks,
                 "error":    str(e)
             })
 
-        # Wait 1 second between questions to avoid Groq rate limiting
-        # Groq free tier allows ~30 requests per minute
-        time.sleep(1)
+        # Respect Groq free-tier rate limit (~30 req/min)
+        time.sleep(2)
 
     return (ragas_questions, ragas_answers, ragas_contexts,
             ragas_ground_truths, out_of_scope_results, all_results)
 
 
 # ============================================================
-# STEP 5 — RUN RAGAS
+# STEP 6 — RUN RAGAS
 # ============================================================
 def run_ragas(questions, answers, contexts, ground_truths):
-    """
-    Runs RAGAS evaluation on the collected results.
-
-    RAGAS needs a HuggingFace Dataset with exactly these columns:
-    - question:     the question asked
-    - answer:       your system's answer
-    - contexts:     list of retrieved chunk texts
-    - ground_truth: the expected correct answer
-
-    Returns a dictionary of metric scores.
-    """
     print(f"\n{'='*55}")
-    print("Running RAGAS evaluation...")
-    print(f"Evaluating {len(questions)} in-scope questions")
+    print(f"Running RAGAS on {len(questions)} in-scope questions...")
     print(f"{'='*55}")
 
-    # Build the dataset RAGAS expects
-    # Each key maps to a list — one entry per question
-    data = {
-        "question":    questions,
-        "answer":      answers,
-        "contexts":    contexts,
-        # contexts must be a list of lists:
-        # [ ["chunk1 text", "chunk2 text"], ["chunk1 text", ...], ... ]
+    dataset = Dataset.from_dict({
+        "question":     questions,
+        "answer":       answers,
+        "contexts":     contexts,
         "ground_truth": ground_truths
-    }
+    })
 
-    # Convert to HuggingFace Dataset format
-    dataset = Dataset.from_dict(data)
-    print("Dataset created successfully")
-
-    # Run RAGAS with the 3 metrics
-    # This calls your LLM (via OpenAI by default) to evaluate
-    # We configure it to use Groq instead
-    print("Calculating scores... (this takes 2-5 minutes)")
-    print("RAGAS makes one API call per question per metric")
+    print("Dataset built. Calculating scores (this will take ~15 mins due to rate limiting)...")
 
     result = evaluate(
         dataset,
-        metrics=[
-            faithfulness,
-            answer_relevancy,
-            context_precision,
-        ]
+        metrics=[faithfulness, answer_relevancy, context_precision],
+        raise_exceptions=False, 
+        is_async=False            
     )
 
     return result
 
 
 # ============================================================
-# STEP 6 — PRINT AND SAVE RESULTS
+# STEP 7 — PRINT AND SAVE RESULTS
 # ============================================================
 def print_scores(ragas_result, out_of_scope_results):
-    """
-    Prints RAGAS scores in a readable format and
-    shows out-of-scope refusal performance.
-    """
     print(f"\n{'='*55}")
     print("RAGAS EVALUATION RESULTS")
     print(f"{'='*55}")
 
-    # Extract scores — RAGAS returns them as a dict
-    scores = ragas_result
-
-    faithfulness_score     = round(float(scores["faithfulness"]),     4)
-    answer_relevancy_score = round(float(scores["answer_relevancy"]), 4)
-    context_precision_score = round(float(scores["context_precision"]), 4)
-
-    # Calculate average
+    faithfulness_score      = round(float(ragas_result["faithfulness"]),      4)
+    answer_relevancy_score  = round(float(ragas_result["answer_relevancy"]),  4)
+    context_precision_score = round(float(ragas_result["context_precision"]), 4)
     average = round(
         (faithfulness_score + answer_relevancy_score + context_precision_score) / 3, 4
     )
@@ -464,29 +402,20 @@ def print_scores(ragas_result, out_of_scope_results):
     print(f"  Context Precision : {context_precision_score}")
     print(f"  {'─'*35}")
     print(f"  Average Score     : {average}")
-
-    # Score interpretation
     print(f"\n  Score Guide:")
-    print(f"  0.8 - 1.0 = Excellent")
-    print(f"  0.6 - 0.8 = Good")
-    print(f"  0.4 - 0.6 = Acceptable")
-    print(f"  Below 0.4 = Needs improvement")
+    print(f"  0.8–1.0 = Excellent  |  0.6–0.8 = Good")
+    print(f"  0.4–0.6 = Acceptable |  <0.4 = Needs work")
 
-    # Out-of-scope results
     print(f"\n{'='*55}")
     print("OUT-OF-SCOPE REFUSAL TEST")
     print(f"{'='*55}")
-
     passed = sum(1 for r in out_of_scope_results if r["correctly_refused"])
     total  = len(out_of_scope_results)
     print(f"\n  Correctly refused: {passed}/{total}")
-
     for r in out_of_scope_results:
         status = "✅ PASSED" if r["correctly_refused"] else "❌ FAILED"
         print(f"\n  {status}: {r['question']}")
-        print(f"  Answer: {r['answer'][:100]}...")
-
-    print(f"\n{'='*55}")
+        print(f"  Answer: {r['answer'][:120]}...")
 
     return {
         "faithfulness":      faithfulness_score,
@@ -498,20 +427,14 @@ def print_scores(ragas_result, out_of_scope_results):
 
 
 def save_results(all_results, scores, filepath=RESULTS_FILE):
-    """
-    Saves all results and scores to a JSON file.
-    This is your proof of evaluation — include it in your submission.
-    """
     output = {
-        "ragas_scores": scores,
-        "total_questions": len(all_results),
+        "ragas_scores":     scores,
+        "total_questions":  len(all_results),
         "detailed_results": all_results
     }
-
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2, ensure_ascii=False)
-
-    print(f"\nResults saved to {filepath}")
+    print(f"\n  Results saved to {filepath}")
 
 
 # ============================================================
@@ -519,30 +442,20 @@ def save_results(all_results, scores, filepath=RESULTS_FILE):
 # ============================================================
 def main():
     print("=" * 55)
-    print("FastAPI RAG — RAGAS Evaluation (Day 4)")
+    print("RAG Documentation Assistant — RAGAS Evaluation")
     print("=" * 55)
 
-    # ── IMPORTANT NOTE ABOUT RAGAS API ──────────────────────
-    # RAGAS by default uses OpenAI to evaluate your answers.
-    # If you don't have an OpenAI key, set these env variables
-    # to use a different LLM for evaluation.
-    # The simplest approach: set OPENAI_API_KEY to your Groq key
-    # and override the base URL. OR just add an OpenAI free trial.
-    #
-    # Easiest fix: add this to your .env file:
-    # OPENAI_API_KEY=your_groq_key_here
-    #
-    # RAGAS will use it for the evaluation LLM calls.
-    # ────────────────────────────────────────────────────────
+    # Step 1: Point RAGAS at Groq (no OpenAI key needed)
+    configure_ragas()
 
-    # Step 1: Load resources
+    # Step 2: Load all pipeline resources
     (collection, all_chunks, all_metadatas,
      all_ids, bm25_index, reranker, groq_client) = load_resources()
 
-    # Step 2: Load questions
+    # Step 3: Load questions
     questions = load_questions("questions.json")
 
-    # Step 3: Run all questions through pipeline
+    # Step 4: Run pipeline on all questions
     (ragas_questions, ragas_answers, ragas_contexts,
      ragas_ground_truths, out_of_scope_results,
      all_results) = collect_results(
@@ -551,12 +464,11 @@ def main():
     )
 
     print(f"\n{'='*55}")
-    print(f"Pipeline complete!")
-    print(f"  In-scope questions processed : {len(ragas_questions)}")
-    print(f"  Out-of-scope questions tested: {len(out_of_scope_results)}")
+    print(f"  In-scope questions  : {len(ragas_questions)}")
+    print(f"  Out-of-scope tested : {len(out_of_scope_results)}")
     print(f"{'='*55}")
 
-    # Step 4: Run RAGAS
+    # Step 5: Run RAGAS
     ragas_result = run_ragas(
         ragas_questions,
         ragas_answers,
@@ -564,22 +476,18 @@ def main():
         ragas_ground_truths
     )
 
-    # Step 5: Print scores
+    # Step 6: Print scores
     scores = print_scores(ragas_result, out_of_scope_results)
 
-    # Step 6: Save results
+    # Step 7: Save to results.json
     save_results(all_results, scores)
 
     print("\n" + "=" * 55)
-    print("EVALUATION COMPLETE!")
+    print("EVALUATION COMPLETE")
     print("=" * 55)
-    print(f"  RAGAS Average Score : {scores['average']}")
+    print(f"  Average RAGAS Score : {scores['average']}")
     print(f"  Refusal Test        : {scores['refusal_passed']}")
-    print(f"\n  Results saved to    : {RESULTS_FILE}")
-    print(f"\nNext steps:")
-    print(f"  1. Look at the 3 lowest-scoring questions in results.json")
-    print(f"  2. Fix them by tweaking chunk size, TOP_K, or the prompt")
-    print(f"  3. Run evaluate.py again and show before/after scores in README")
+    print(f"  Results saved to    : {RESULTS_FILE}")
 
 
 if __name__ == "__main__":

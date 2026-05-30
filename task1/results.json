@@ -1,0 +1,414 @@
+{
+  "ragas_scores": {
+    "faithfulness": NaN,
+    "answer_relevancy": 0.6843,
+    "context_precision": NaN,
+    "average": NaN,
+    "refusal_passed": "2/2"
+  },
+  "total_questions": 25,
+  "detailed_results": [
+    {
+      "id": 1,
+      "category": "easy",
+      "question": "What is FastAPI?",
+      "expected_answer": "FastAPI is a modern, fast web framework for building APIs with Python based on standard Python type hints. It is one of the fastest Python frameworks available and provides automatic API documentation.",
+      "generated_answer": "FastAPI is already being used in production in many applications and systems [1]. By using FastAPI, you are saving development time, bugs, lines of code, and you would probably get the same performance (or better) you would if you didn't use it [2].",
+      "sources": [
+        "versions.md",
+        "benchmarks.md",
+        "history-design-future.md",
+        "fastapi.md",
+        "additional-responses.md"
+      ],
+      "rewritten_query": "What is FastAPI?",
+      "included_in_ragas": true
+    },
+    {
+      "id": 2,
+      "category": "easy",
+      "question": "What decorator do you use to create a GET route in FastAPI?",
+      "expected_answer": "You use the @app.get() decorator to create a GET route in FastAPI. For example: @app.get('/items') def read_items(): return items",
+      "generated_answer": "To create a GET route in FastAPI, you use the `@app.get()` decorator [1]. This is a path operation decorator that allows you to define a route for handling GET requests [1]. You can use this decorator to create routes with specific paths and parameters, as shown in the example `@app.get(\"/items/{item_id}\")` [3].",
+      "sources": [
+        "first-steps.md",
+        "using-request-directly.md",
+        "release-notes.md",
+        "status.md",
+        "openapi-webhooks.md"
+      ],
+      "rewritten_query": "\"@app.get\"",
+      "included_in_ragas": true
+    },
+    {
+      "id": 3,
+      "category": "easy",
+      "question": "How do you install FastAPI?",
+      "expected_answer": "You can install FastAPI using pip: pip install fastapi. For production use, also install an ASGI server: pip install uvicorn",
+      "generated_answer": "To install FastAPI, create and activate a virtual environment, then install FastAPI using the command `pip install \"fastapi[standard]\"` [1]. Make sure to put `\"fastapi[standard]\"` in quotes to ensure it works in all terminals [1]. This method includes the standard optional dependencies [2]. Alternatively, you can install without the `fastapi-cloud-cli` using `pip install \"fastapi[standard-no-fastapi-cloud-cli]\"` [5].",
+      "sources": [
+        "index.md",
+        "release-notes.md",
+        "virtual-environments.md",
+        "docker.md",
+        "index.md"
+      ],
+      "rewritten_query": "Install FastAPI using pip",
+      "included_in_ragas": true
+    },
+    {
+      "id": 4,
+      "category": "easy",
+      "question": "How do you run a FastAPI application?",
+      "expected_answer": "You run a FastAPI application using uvicorn. The command is: uvicorn main:app --reload. The --reload flag enables auto-reload on code changes during development.",
+      "generated_answer": "I could not find this in the provided documentation [1][2][3][4][5].",
+      "sources": [
+        "index.md",
+        "versions.md",
+        "index.md",
+        "https.md",
+        "index.md"
+      ],
+      "rewritten_query": "Running a FastAPI application",
+      "included_in_ragas": true
+    },
+    {
+      "id": 5,
+      "category": "easy",
+      "question": "What is the URL to access the automatic interactive API documentation in FastAPI?",
+      "expected_answer": "FastAPI automatically generates interactive API documentation at /docs (Swagger UI) and an alternative at /redoc (ReDoc). You can access them at http://127.0.0.1:8000/docs and http://127.0.0.1:8000/redoc",
+      "generated_answer": "The URL to access the automatic interactive API documentation in FastAPI is [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) [1][2]. Alternatively, you can also access it at [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc) [1][2].",
+      "sources": [
+        "first-steps.md",
+        "index.md",
+        "release-notes.md",
+        "docker.md",
+        "features.md"
+      ],
+      "rewritten_query": "/FastAPI automatic interactive API documentation URL",
+      "included_in_ragas": true
+    },
+    {
+      "id": 6,
+      "category": "medium",
+      "question": "How do you declare path parameters in FastAPI?",
+      "expected_answer": "Path parameters are declared directly in the route path using curly braces and as function parameters with type hints. For example: @app.get('/items/{item_id}') def read_item(item_id: int). FastAPI automatically validates and converts the type.",
+      "generated_answer": "You can declare path parameters in FastAPI by matching function parameters with path parameters, which will be taken from the path [1]. Path parameters will be detected by name, and you don't have to declare them in any specific order [2]. Additionally, you can use `Path` from `fastapi` to declare validations and metadata for path parameters [4].",
+      "sources": [
+        "body.md",
+        "query-params.md",
+        "body.md",
+        "path-params-numeric-validations.md",
+        "release-notes.md"
+      ],
+      "rewritten_query": "Declare path parameters in FastAPI",
+      "included_in_ragas": true
+    },
+    {
+      "id": 7,
+      "category": "medium",
+      "question": "What is a Pydantic model and why is it used in FastAPI?",
+      "expected_answer": "A Pydantic model is a class that inherits from BaseModel used to declare request body schemas. FastAPI uses Pydantic models to validate incoming request data, convert types automatically, and generate API documentation. You declare fields with type hints and FastAPI handles validation.",
+      "generated_answer": "A Pydantic model is used in FastAPI to declare requests and responses [1]. Pydantic models can be used for `Query` parameters [2]. FastAPI is built on top of Pydantic [1], and it supports using Pydantic models for various parameters, including `Query`, `Header`, and `Cookie` parameters [2]. Pydantic models are also used for `Form` parameters [5]. FastAPI's support for Pydantic models makes it easier to migrate to new versions of Pydantic, such as Pydantic v2 [3].",
+      "sources": [
+        "dataclasses.md",
+        "release-notes.md",
+        "release-notes.md",
+        "release-notes.md",
+        "release-notes.md"
+      ],
+      "rewritten_query": "Pydantic models in FastAPI",
+      "included_in_ragas": true
+    },
+    {
+      "id": 8,
+      "category": "medium",
+      "question": "How do you declare query parameters in FastAPI?",
+      "expected_answer": "Query parameters are declared as function parameters that are not part of the path. For example: @app.get('/items') def read_items(skip: int = 0, limit: int = 10). FastAPI automatically reads them from the URL query string. Optional parameters can use Optional type or a default value.",
+      "generated_answer": "You can declare query parameters in FastAPI by declaring additional function parameters that are not part of the path parameters, and they will be automatically interpreted as \"query\" parameters [5]. If the parameter is of a singular type, like `int`, `float`, `str`, `bool`, etc, it will be interpreted as a query parameter [4]. You can also declare query parameters using a Pydantic model to declare them and their validations [3]. The query parameter can be of type `str | None`, meaning it's of type `str` but could also be `None` [1].",
+      "sources": [
+        "query-params-str-validations.md",
+        "query-params.md",
+        "query-param-models.md",
+        "body.md",
+        "query-params.md"
+      ],
+      "rewritten_query": "Declare query parameters in FastAPI",
+      "included_in_ragas": true
+    },
+    {
+      "id": 9,
+      "category": "medium",
+      "question": "How do you handle HTTP exceptions in FastAPI?",
+      "expected_answer": "FastAPI provides HTTPException to return HTTP error responses. You raise it with a status code and optional detail: raise HTTPException(status_code=404, detail='Item not found'). You can also add custom headers to the exception response.",
+      "generated_answer": "To handle HTTP exceptions in FastAPI, you can override the default exception handlers with your own [1]. FastAPI has its own `HTTPException` error class that inherits from Starlette's `HTTPException` error class, and when you register an exception handler, you should register it for Starlette's `HTTPException` [2].",
+      "sources": [
+        "handling-errors.md",
+        "handling-errors.md",
+        "advanced-dependencies.md",
+        "release-notes.md",
+        "release-notes.md"
+      ],
+      "rewritten_query": "Handling HTTP exceptions in FastAPI",
+      "included_in_ragas": true
+    },
+    {
+      "id": 10,
+      "category": "medium",
+      "question": "What are background tasks in FastAPI and how do you use them?",
+      "expected_answer": "Background tasks allow you to run operations after returning a response, without making the client wait. You add a BackgroundTasks parameter to your route function and call add_task() with the function to run. For example: background_tasks.add_task(send_email, email, message)",
+      "generated_answer": "Background tasks in FastAPI are independent sets of logic that can be handled separately, with their own resources, and can be scheduled to run after the response is sent [1]. You can declare a parameter in a path operation function or dependency function with the type `BackgroundTasks` to use them [1]. Additionally, a background task is normally an independent set of logic that should be handled separately, with its own resources, which allows for cleaner code [2].",
+      "sources": [
+        "background.md",
+        "advanced-dependencies.md",
+        "background-tasks.md",
+        "release-notes.md",
+        "background-tasks.md"
+      ],
+      "rewritten_query": "Background tasks in FastAPI usage",
+      "included_in_ragas": true
+    },
+    {
+      "id": 11,
+      "category": "medium",
+      "question": "How do you add CORS middleware in FastAPI?",
+      "expected_answer": "You add CORS middleware using CORSMiddleware from fastapi.middleware.cors. Add it to the app with app.add_middleware() specifying allowed origins, methods, and headers. For development you can allow all origins with allow_origins=['*'].",
+      "generated_answer": "To add CORS middleware in FastAPI, you can configure it using the `CORSMiddleware` [1]. You can import `CORSMiddleware` and create a list of allowed origins, then add it as a \"middleware\" to your FastAPI application [1]. Additionally, you can also use `from starlette.middleware.cors import CORSMiddleware` [5]. For more information on middleware, you can refer to the middleware tutorial [2].",
+      "sources": [
+        "cors.md",
+        "middleware.md",
+        "release-notes.md",
+        "middleware.md",
+        "cors.md"
+      ],
+      "rewritten_query": "Add CORS middleware in FastAPI",
+      "included_in_ragas": true
+    },
+    {
+      "id": 12,
+      "category": "medium",
+      "question": "How do you return a specific HTTP status code in FastAPI?",
+      "expected_answer": "You can set the status code in the path operation decorator using the status_code parameter. For example: @app.post('/items', status_code=201). You can also use the status module: from fastapi import status and use status.HTTP_201_CREATED for readability.",
+      "generated_answer": "To return a specific HTTP status code in FastAPI, you can set the status code in your path operation, and FastAPI will use the default status code or the one you set [1]. By default, FastAPI will return the responses using a JSONResponse, putting the content you return from your path operation inside of that JSONResponse, and it will use the default status code or the one you set in your path operation [2].",
+      "sources": [
+        "response-status-code.md",
+        "additional-status-codes.md",
+        "authentication-error-status-code.md",
+        "additional-status-codes.md",
+        "response-change-status-code.md"
+      ],
+      "rewritten_query": "Return HTTP status code in FastAPI",
+      "included_in_ragas": true
+    },
+    {
+      "id": 13,
+      "category": "medium",
+      "question": "How do you receive form data in FastAPI?",
+      "expected_answer": "To receive form data you declare parameters with Form(). First install python-multipart: pip install python-multipart. Then use Form in your function: @app.post('/login') def login(username: str = Form(), password: str = Form()). Form data is encoded differently from JSON.",
+      "generated_answer": "To receive form data in FastAPI, you can use `Form` [1]. First, you need to install `python-multipart` [1]. You can declare multiple `Form` parameters in a path operation [3]. Use `Form` to declare form data input parameters [3]. To declare form bodies, you need to use `Form` explicitly [4]. FastAPI will make sure to read the form data from the right place instead of JSON [4]. You can create file and form parameters the same way you would for `Body` or `Query` [5]. The files and form fields will be uploaded as form data and you will receive the files and form fields [5].",
+      "sources": [
+        "request-forms.md",
+        "request-forms-and-files.md",
+        "request-forms.md",
+        "request-forms.md",
+        "request-forms-and-files.md"
+      ],
+      "rewritten_query": "Receiving form data in FastAPI",
+      "included_in_ragas": true
+    },
+    {
+      "id": 14,
+      "category": "hard",
+      "question": "What is the difference between @app.get and using APIRouter in FastAPI?",
+      "expected_answer": "APIRouter allows you to organize routes in separate files and include them in the main app with app.include_router(). It supports prefixes, tags, and dependencies at the router level. @app.get directly adds routes to the main application. APIRouter is recommended for larger applications to keep code organized.",
+      "generated_answer": "I could not find this in the provided documentation. [1][2][3][4][5]",
+      "sources": [
+        "bigger-applications.md",
+        "alternatives.md",
+        "custom-request-and-route.md",
+        "apirouter.md",
+        "release-notes.md"
+      ],
+      "rewritten_query": "difference between @app.get and APIRouter in FastAPI",
+      "included_in_ragas": true
+    },
+    {
+      "id": 15,
+      "category": "hard",
+      "question": "How does FastAPI dependency injection work?",
+      "expected_answer": "FastAPI dependency injection uses the Depends() function. You declare a dependency function and pass it as a default value using Depends. FastAPI calls the dependency function, caches the result per request, and injects it into your route function. Dependencies can have their own dependencies creating a dependency tree.",
+      "generated_answer": "FastAPI's dependency injection system allows you to declare dependencies for your path operation functions, and FastAPI will take care of executing them and injecting the results [1]. This system is also known as resources, providers, services, injectables, or components [1]. The dependency injection system is designed to be simple to use and makes it easy to integrate other components with FastAPI [5]. It can also be used with BackgroundTasks, allowing you to declare a parameter of type BackgroundTasks at multiple levels [2]. Overall, dependency injection in FastAPI means that your code can declare things it requires to work, and the system will take care of providing those dependencies [3].",
+      "sources": [
+        "index.md",
+        "background-tasks.md",
+        "index.md",
+        "index.md",
+        "index.md"
+      ],
+      "rewritten_query": "FastAPI dependency injection mechanism",
+      "included_in_ragas": true
+    },
+    {
+      "id": 16,
+      "category": "hard",
+      "question": "What is response_model in FastAPI and what does it do?",
+      "expected_answer": "response_model is a parameter in path operation decorators that defines the schema for the response. FastAPI uses it to validate output data, filter out fields not in the model, and generate response documentation. It ensures sensitive fields like passwords are never accidentally returned even if present in the returned object.",
+      "generated_answer": "In FastAPI, a `response_model` is used to filter and convert the object you returned [1]. It is also used to serialize the data to JSON, using Pydantic, if you declare a response model [2]. When you declare a `response_model`, FastAPI will use it to serialize the data to JSON [2]. If you don't declare a response model, FastAPI will use the `jsonable_encoder` and put it in a `JSONResponse` [2].",
+      "sources": [
+        "response-headers.md",
+        "custom-response.md",
+        "response-directly.md",
+        "response-model.md",
+        "release-notes.md"
+      ],
+      "rewritten_query": "response_model in FastAPI documentation",
+      "included_in_ragas": true
+    },
+    {
+      "id": 17,
+      "category": "hard",
+      "question": "How do you handle file uploads in FastAPI?",
+      "expected_answer": "File uploads use UploadFile and File from fastapi. Declare the parameter as: file: UploadFile = File(). UploadFile provides async methods like read(), write(), and seek(). You can also use bytes type for small files. Install python-multipart to enable file upload support.",
+      "generated_answer": "To handle file uploads in FastAPI, you can declare the type of your path operation function parameter as `bytes`, which will read the file for you and you will receive the contents as `bytes` [1]. However, for larger files or more complex cases, you can use the `UploadFile` class, which provides a file-like interface [2]. You can import `UploadFile` directly from `fastapi` and define path operation function parameters to be of this type to receive files from the request [2].",
+      "sources": [
+        "request-files.md",
+        "uploadfile.md",
+        "release-notes.md",
+        "release-notes.md",
+        "release-notes.md"
+      ],
+      "rewritten_query": "File uploads in FastAPI",
+      "included_in_ragas": true
+    },
+    {
+      "id": 18,
+      "category": "hard",
+      "question": "What is the difference between async def and def route functions in FastAPI?",
+      "expected_answer": "async def route functions run as coroutines and are best for I/O bound operations like database queries or external API calls without blocking. def functions run in a separate thread pool. FastAPI handles both correctly. You should use async def when using await with async libraries, and def for synchronous code or blocking operations.",
+      "generated_answer": "The difference between `async def` and `def` route functions in FastAPI is that functions defined with `async def` have to be \"awaited\" and can only be called inside of functions defined with `async def` too [2]. However, FastAPI will know how to handle both `async def` and `def` functions when they are used as *path operation functions* [1][2]. You can mix `def` and `async def` in your *path operation functions* as much as you need, and FastAPI will do the right thing with them [3]. Ultimately, the choice between `async def` and `def` depends on your specific use case, but FastAPI will handle both correctly [4].",
+      "sources": [
+        "async.md",
+        "async.md",
+        "async.md",
+        "index.md",
+        "async.md"
+      ],
+      "rewritten_query": "difference between async def and def in FastAPI",
+      "included_in_ragas": true
+    },
+    {
+      "id": 19,
+      "category": "hard",
+      "question": "How do you use yield in FastAPI dependencies?",
+      "expected_answer": "Dependencies with yield allow cleanup code to run after the response is sent. Code before yield runs before the route, the yielded value is injected, and code after yield runs as cleanup. This is used for database sessions: db = SessionLocal(); try: yield db; finally: db.close(). The cleanup runs even if an exception occurs.",
+      "generated_answer": "To use `yield` in FastAPI dependencies, you should use `yield` instead of `return`, and write the extra steps after, making sure to use `yield` only one single time per dependency [1]. This allows FastAPI to internally create a context manager for the dependency and combine it with other related tools [2].",
+      "sources": [
+        "dependencies-with-yield.md",
+        "dependencies-with-yield.md",
+        "advanced-dependencies.md",
+        "dependencies-with-yield.md",
+        "release-notes.md"
+      ],
+      "rewritten_query": "Using yield with FastAPI dependencies",
+      "included_in_ragas": true
+    },
+    {
+      "id": 20,
+      "category": "hard",
+      "question": "How do you add custom middleware in FastAPI?",
+      "expected_answer": "Custom middleware is added using the @app.middleware decorator with 'http' as argument. The middleware function receives a request and call_next function. You can modify the request, call call_next(request) to get the response, modify the response, and return it. You can also use app.add_middleware() with a class-based middleware.",
+      "generated_answer": "You can add custom middleware to FastAPI applications using the `app.add_middleware()` function, which receives a middleware class as the first argument and any additional arguments to be passed to the middleware [3]. A \"middleware\" is a function that works with every request before it is processed by any specific path operation, and also with every response before returning it [1]. For more information on adding custom middleware, you can refer to the tutorial on middleware [2].",
+      "sources": [
+        "middleware.md",
+        "middleware.md",
+        "middleware.md",
+        "release-notes.md",
+        "custom-request-and-route.md"
+      ],
+      "rewritten_query": "Adding custom middleware in FastAPI",
+      "included_in_ragas": true
+    },
+    {
+      "id": 21,
+      "category": "multi_concept",
+      "question": "How do you implement OAuth2 password authentication with JWT tokens in FastAPI?",
+      "expected_answer": "OAuth2 with JWT requires OAuth2PasswordBearer for the token scheme, OAuth2PasswordRequestForm for login, and python-jose for JWT encoding. Create a /token endpoint that verifies credentials and returns a JWT token. Protect routes using a dependency that decodes the token and gets the current user. Install: pip install python-jose passlib",
+      "generated_answer": "To implement OAuth2 password authentication with JWT tokens in FastAPI, you can use the `OAuth2PasswordBearer` class [2]. This class is used with the OAuth2 Password flow and a Bearer token [2]. For more information on implementing OAuth2 with Password and hashing, Bearer with JWT tokens, you can refer to the documentation [1].",
+      "sources": [
+        "oauth2-jwt.md",
+        "first-steps.md",
+        "release-notes.md",
+        "oauth2-scopes.md",
+        "release-notes.md"
+      ],
+      "rewritten_query": "Implementing OAuth2 password flow with JWT in FastAPI",
+      "included_in_ragas": true
+    },
+    {
+      "id": 22,
+      "category": "multi_concept",
+      "question": "How do you structure a large FastAPI application with multiple routers, database connection, and authentication?",
+      "expected_answer": "Use APIRouter in separate files for each feature area, include them in main.py with app.include_router(). Use dependency injection for database sessions with yield dependencies. Create an auth dependency that validates JWT tokens and inject it into protected routers. Organize into folders like routers/, models/, dependencies/, and schemas/.",
+      "generated_answer": "I could not find this in the provided documentation. [1][2]",
+      "sources": [
+        "oauth2-jwt.md",
+        "index.md",
+        "first-steps.md",
+        "index.md",
+        "oauth2-jwt.md"
+      ],
+      "rewritten_query": "Structuring large FastAPI applications with routers and authentication.",
+      "included_in_ragas": true
+    },
+    {
+      "id": 23,
+      "category": "multi_concept",
+      "question": "How do you write tests for a FastAPI application including endpoints that require authentication?",
+      "expected_answer": "Use TestClient from fastapi.testclient wrapping your app. For authenticated endpoints use dependency_overrides to replace auth dependencies with test versions that return a test user. You can also generate a real test token and pass it in the Authorization header. Use pytest for the test runner.",
+      "generated_answer": "To write tests for a FastAPI application, you can use the `TestClient` class, which allows you to test FastAPI applications without creating an actual HTTP and socket connection [2]. For endpoints that require authentication, you would need to simulate authentication in your tests, but the provided documentation does not specify how to do this [1][2]. You can write asynchronous tests using `async` functions, which can also call and `await` other `async` functions apart from sending requests to your FastAPI application [4]. However, I could not find specific information on how to test endpoints that require authentication in the provided documentation.",
+      "sources": [
+        "async-tests.md",
+        "testclient.md",
+        "testing.md",
+        "async-tests.md",
+        "release-notes.md"
+      ],
+      "rewritten_query": "Testing FastAPI endpoints with authentication",
+      "included_in_ragas": true
+    },
+    {
+      "id": 24,
+      "category": "out_of_scope",
+      "question": "What is the capital of France?",
+      "expected_answer": "NOT_IN_DOCS",
+      "generated_answer": "I could not find this in the provided documentation [1][2].",
+      "sources": [
+        "README.md",
+        "README.md",
+        "release-notes.md",
+        "release-notes.md",
+        "release-notes.md"
+      ],
+      "rewritten_query": "France capital",
+      "correctly_refused": true,
+      "included_in_ragas": false
+    },
+    {
+      "id": 25,
+      "category": "out_of_scope",
+      "question": "How do I reverse a linked list in Python?",
+      "expected_answer": "NOT_IN_DOCS",
+      "generated_answer": "I could not find this in the provided documentation [1][2][3][4][5].",
+      "sources": [
+        "python-types.md",
+        "response-model.md",
+        "release-notes.md",
+        "release-notes.md",
+        "release-notes.md"
+      ],
+      "rewritten_query": "Reverse linked list Python implementation",
+      "correctly_refused": true,
+      "included_in_ragas": false
+    }
+  ]
+}
