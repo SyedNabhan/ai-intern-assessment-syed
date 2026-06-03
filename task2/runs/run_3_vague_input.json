@@ -1,0 +1,10 @@
+{
+  "query": "AI",
+  "final_report": null,
+  "error_message": "Query is too short. Please ask a proper research question.",
+  "needs_clarification": false,
+  "clarification_question": null,
+  "iterations": 0,
+  "search_results_count": 0,
+  "tool_errors": []
+}

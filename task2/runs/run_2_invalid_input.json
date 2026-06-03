@@ -1,0 +1,10 @@
+{
+  "query": "???###!!!",
+  "final_report": null,
+  "error_message": "Query appears invalid. Please enter a clear research question.",
+  "needs_clarification": false,
+  "clarification_question": null,
+  "iterations": 0,
+  "search_results_count": 0,
+  "tool_errors": []
+}

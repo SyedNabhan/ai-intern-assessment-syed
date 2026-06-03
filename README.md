@@ -1,1 +1,0 @@
-# ai-intern-assessment-syed
