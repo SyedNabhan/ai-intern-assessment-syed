@@ -414,7 +414,8 @@ def is_irrelevant_answer(answer):
         "no information about",
         "outside the scope",
         "not related to fastapi",
-        "not related to langchain",
+        "not related to langchain"
+        "this information is not available in the provided documentation chunks",
     ]
 
     answer_lower = answer.lower()
