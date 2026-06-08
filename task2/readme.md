@@ -1,34 +1,116 @@
-# Task 2 — Tool-Using Research Agent
+# 🔬 Research Assistant Agent
 
-A LangGraph-powered autonomous research agent that takes a user's question, searches the web, scrapes pages, queries the Task 1 RAG system, and produces a structured markdown report with citations. Built with a live Streamlit interface that streams the agent's reasoning step by step.
+> A multi-step AI research agent built with LangGraph, Groq, and Streamlit — part of an AI Developer Internship assessment.
+
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)
+![LangGraph](https://img.shields.io/badge/LangGraph-1.2.2-FF6B35?style=flat-square)
+![Groq](https://img.shields.io/badge/Groq-llama--3.3--70b-00A67E?style=flat-square)
+![Streamlit](https://img.shields.io/badge/Streamlit-1.58-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)
+![Langfuse](https://img.shields.io/badge/Langfuse-4.7.1-7C3AED?style=flat-square)
 
 ---
 
 ## What It Does
 
-The user types a research question. The agent:
-1. Validates the input
-2. Plans which tool to use
-3. Searches the web (DuckDuckGo)
-4. Optionally scrapes pages or queries the Task 1 RAG system
-5. Synthesizes all findings into a structured report using Llama 3.3
+You type a research question. The agent:
 
-All steps are visible in real time in the UI and recorded in Langfuse.
+1. **Validates** your input — rejects gibberish, asks for clarification on vague queries
+2. **Plans** a search strategy across up to 3 iterations
+3. **Searches** the web via DuckDuckGo, scrapes relevant pages, and optionally queries a local RAG knowledge base (Task 1)
+4. **Synthesizes** everything into a structured markdown report with citations
+
+All of this happens live — you watch the agent's reasoning step by step in the UI as it runs.
+
+---
+
+## Demo
+
+```
+Query: "What are the latest advancements in retrieval-augmented generation for production systems?"
+
+[13:06:25] NODE  input_validator — validating query…
+[13:06:25] ℹ  ✓ Input valid, proceeding to planner
+[13:06:25] NODE  planner — deciding next action…
+[13:06:25] ℹ  Planner selected tool: web_search
+[13:06:26] NODE  tool_caller — executing web_search…
+[13:06:26] TOOL  web_search(query='…')
+           ↳ 6 search results retrieved
+[13:06:38] NODE  synthesizer — writing final report…
+[13:06:47] ✓ Agent finished — report ready
+```
+
+---
+
+## Architecture
+
+```
+User Query
+    │
+    ▼
+┌─────────────────┐
+│ input_validator │  ── gibberish? → error
+│    (Node 1)     │  ── single word? → clarification question
+└────────┬────────┘
+         │
+    ▼
+┌─────────────────┐
+│    planner      │  ── decides which tool to call next
+│    (Node 2)     │  ── stops after 3 iterations or 3 results
+└────────┬────────┘
+         │
+    ▼
+┌─────────────────┐
+│  tool_caller    │  ── executes the selected tool
+│    (Node 3)     │  ── handles failures gracefully
+└────────┬────────┘
+         │
+    ┌────▼────┐
+    │  Edge   │  ── enough data? → synthesizer
+    │         │  ── cost > $1? → synthesizer
+    └────┬────┘  ── else → loop back to planner
+         │
+    ▼
+┌─────────────────┐
+│  synthesizer    │  ── calls Groq LLM
+│    (Node 4)     │  ── produces structured markdown report
+└─────────────────┘
+```
+
+---
+
+## Tools
+
+| Tool | Type | Description |
+|---|---|---|
+| `web_search` | Read | DuckDuckGo search — no API key needed |
+| `scrape_page` | Read | Fetches and cleans page content via httpx + BeautifulSoup |
+| `query_rag` | Read | Queries the Task 1 FastAPI documentation RAG pipeline |
+| `format_report` | Pure | Structures all results into a markdown template for synthesis |
+
+---
+
+## Guardrails
+
+| Condition | Response |
+|---|---|
+| Gibberish / symbols / no vowels | `error_message` — yellow warning in UI |
+| Single-word vague query | `needs_clarification` — asks a specific follow-up |
+| Tool raises an exception | Logged to `tool_errors`, agent continues |
+| 3 iterations reached | Routes to synthesizer (hard stop) |
+| Cost exceeds $1.00 | Routes to synthesizer with cost warning |
 
 ---
 
 ## Stack
 
-| Component | Technology |
-|---|---|
-| Agent Framework | LangGraph |
-| LLM | Groq API — `llama-3.3-70b-versatile` (free) |
-| Web Search | `ddgs` — DuckDuckGo, no API key needed |
-| Web Scraping | `httpx` + `BeautifulSoup4` |
-| RAG Integration | Task 1 retrieval pipeline (ChromaDB + BM25) |
-| Observability | Langfuse v4.7.1 |
-| UI | Streamlit |
-| Dependency Management | `uv` |
+| Component | Choice | Why |
+|---|---|---|
+| Agent framework | LangGraph 1.2.2 | Explicit state machine, typed edges, built-in recursion limits |
+| LLM | Groq + llama-3.3-70b-versatile | Sub-second TTFT, free tier, 128k context |
+| Web search | DuckDuckGo (`ddgs`) | No API key, no rate limits at this scale |
+| Observability | Langfuse 4.7.1 | Per-node traces, token counts, latency |
+| UI | Streamlit 1.58 | Rapid prototyping, native `st.empty()` for live streaming |
+| State | TypedDict | Native LangGraph compatibility (Pydantic breaks `.get()`) |
 
 ---
 
@@ -36,157 +118,97 @@ All steps are visible in real time in the UI and recorded in Langfuse.
 
 ```
 task-2/
-├── agent_state.py       # TypedDict state shared across all nodes
-├── agent_tools.py       # 4 tools: web_search, scrape_page, query_rag, format_report
-├── agent.py             # LangGraph graph, nodes, conditional edge, runner
-├── app.py               # Streamlit UI with live streaming
-├── decisions.md         # Design decisions and tradeoffs
+├── agent.py            # LangGraph graph — nodes, edges, build_graph()
+├── agent_state.py      # TypedDict state definition + default_state()
+├── agent_tools.py      # 4 tools: web_search, scrape_page, query_rag, format_report
+├── app.py              # Streamlit UI with live stream panel
+├── decisions.md        # Design decisions and trade-offs
 ├── guardrail_tests/
-│   └── test_guardrails.py   # 3 guardrail tests
-├── runs/
-│   ├── run_1_happy_path.json
-│   ├── run_2_invalid_input.json
-│   └── run_3_vague_input.json
-├── task1/               # Task 1 RAG pipeline (required for query_rag)
-├── chroma_db/           # ChromaDB vector store from Task 1
-├── .env                 # API keys (never committed)
-└── pyproject.toml       # uv dependencies
+│   └── test_guardrails.py   # 18 tests across 3 guardrail classes
+└── runs/
+    ├── run_1_happy_path.json
+    ├── run_2_invalid_input.json
+    └── run_3_vague_input.json
 ```
 
 ---
 
-## Setup
+## Getting Started
 
-### 1. Clone and navigate
+### Prerequisites
 
-```cmd
-cd task-2
+- Python 3.11
+- A [Groq API key](https://console.groq.com) (free)
+- A [Langfuse](https://langfuse.com) account (free)
+
+### Install dependencies
+
+```bash
+pip install langgraph langfuse groq ddgs httpx beautifulsoup4 streamlit python-dotenv
 ```
 
-### 2. Install dependencies
+### Configure environment
 
-```cmd
-uv sync
-```
+Create `task-2/.env`:
 
-### 3. Set up environment variables
-
-Create a `.env` file in `task-2/`:
-
-```
+```env
 GROQ_API_KEY=your_groq_key_here
 LANGFUSE_PUBLIC_KEY=your_langfuse_public_key
 LANGFUSE_SECRET_KEY=your_langfuse_secret_key
 LANGFUSE_HOST=https://cloud.langfuse.com
 ```
 
-Get your keys from:
-- Groq: `console.groq.com` (free)
-- Langfuse: `cloud.langfuse.com` (free)
+### Run the app
 
-### 4. Launch the UI
-
-```cmd
-uv run streamlit run app.py
+```bash
+cd task-2
+python -m streamlit run app.py
 ```
 
----
+Open `http://localhost:8501` — type a question or click a preset example.
 
-## Agent Graph
+### Run guardrail tests
 
-```
-[input_validator]
-       ↓
-   [planner]
-       ↓
- [tool_caller] ←─────────────┐
-       ↓                     │
- [should_continue] ──loop────┘
-       ↓ (done / limit hit)
-  [synthesizer]
-       ↓
-     [END]
+```bash
+cd task-2
+python -m pytest guardrail_tests/ -v
 ```
 
-### Nodes
-
-| Node | What it does |
-|---|---|
-| `input_validator` | Rejects empty, gibberish, or single-word queries |
-| `planner` | Decides which tool to call next based on current state |
-| `tool_caller` | Executes the chosen tool, handles failures gracefully |
-| `synthesizer` | Writes the final structured report using Llama 3.3 |
-
-### Conditional Edge
-
-`should_continue` routes back to `tool_caller` or forward to `synthesizer` based on:
-- Iteration count ≥ 3
-- Search results collected ≥ 3
-- Cost limit of $1.00 reached
-- Planner marks task complete
-
----
-
-## Tools
-
-### `web_search(query, max_results=5)`
-Searches DuckDuckGo. No API key required. Returns list of `{title, url, snippet}`.
-
-### `scrape_page(url, max_chars=3000)`
-Fetches and cleans a web page using httpx + BeautifulSoup. Returns `{url, content, error}`. Handles timeouts and 4xx/5xx errors gracefully.
-
-### `query_rag(question)`
-Queries the Task 1 RAG pipeline (FastAPI documentation corpus). Uses ChromaDB + BM25 hybrid retrieval + reranker. Falls back gracefully if Task 1 is unavailable.
-
-### `format_report(query, search_results, scraped_pages, rag_results, tool_errors)`
-Pure function — no LLM call. Formats all accumulated results into a structured markdown document passed to the synthesizer.
-
----
-
-## Guardrails
-
-| Failure Mode | Input Example | Behaviour |
-|---|---|---|
-| Invalid input | `???###!!!` | Returns error message, skips to END |
-| Vague input | `AI` | Returns clarification question, skips to END |
-| Tool failure | Network timeout | Logs error in state, agent continues with partial results |
-| Cost ceiling | Any run > $1.00 | Agent stops immediately, synthesizes with data so far |
-| Iteration limit | Any run > 3 loops | Agent stops, synthesizes with data so far |
-
----
-
-## Running Tests
-
-```cmd
-uv run pytest guardrail_tests/
-```
-
----
-
-## Example Runs
-
-All saved in `runs/`:
-
-**Happy path** — `run_1_happy_path.json`
-> "What are the latest developments in large language models?"
-→ Full report with key findings and cited sources
-
-**Invalid input** — `run_2_invalid_input.json`
-> `???###!!!`
-→ `"Query appears invalid. Please enter a clear research question."`
-
-**Vague input** — `run_3_vague_input.json`
-> `AI`
-→ `"'AI' is too vague. What specifically about 'AI' do you want to research?"`
+All 18 tests should pass.
 
 ---
 
 ## Observability
 
-Every run is traced in Langfuse with:
-- Each node entered and exited
-- Tool called with arguments and result summary
-- Iteration count at each step
-- Final report in output
+Every run is traced in Langfuse:
 
-View traces at `cloud.langfuse.com` after running.
+- `research-agent-run` — top-level agent span
+- `node:tool_caller` — per-tool span with arguments and results  
+- `final-output` — synthesized report with iteration count
+
+---
+
+## Design Decisions
+
+See [`decisions.md`](decisions.md) for the full write-up. Key choices:
+
+- **TypedDict over Pydantic** — LangGraph calls `.get()` on state internally; Pydantic BaseModel doesn't support this and crashed at runtime
+- **Groq over Claude/GPT-4o** — 10–30× cheaper per run, sub-second TTFT makes the live stream feel responsive
+- **DuckDuckGo over paid search APIs** — sufficient quality at this scale, zero setup friction
+- **Fixed planner over LLM planner** — simpler, faster, easier to test; an LLM-based planner would add latency and cost without meaningful quality improvement for 3-iteration runs
+
+---
+
+## What I'd Improve with More Time
+
+- **Async tool calls** — run web_search and scrape_page in parallel with `asyncio.gather`, cutting latency roughly in half
+- **Smarter query planning** — LLM-based planner that decides whether RAG is relevant before routing
+- **RAG caching** — the `query_rag` tool re-initialises the ChromaDB client on every call; a module-level singleton would cut per-call latency from ~2s to ~200ms
+- **Memory layer** — cache reports for repeated queries using Redis or SQLite keyed by query hash
+
+---
+
+## Author
+
+**Syed Nabhan** — AI Developer Intern Assessment  
+Built as part of a 3-week technical assessment covering RAG, LangGraph agents, and MCP servers.
