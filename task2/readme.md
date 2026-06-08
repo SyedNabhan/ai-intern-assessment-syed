@@ -199,15 +199,6 @@ See [`decisions.md`](decisions.md) for the full write-up. Key choices:
 
 ---
 
-## What I'd Improve with More Time
-
-- **Async tool calls** — run web_search and scrape_page in parallel with `asyncio.gather`, cutting latency roughly in half
-- **Smarter query planning** — LLM-based planner that decides whether RAG is relevant before routing
-- **RAG caching** — the `query_rag` tool re-initialises the ChromaDB client on every call; a module-level singleton would cut per-call latency from ~2s to ~200ms
-- **Memory layer** — cache reports for repeated queries using Redis or SQLite keyed by query hash
-
----
-
 ## Author
 
 **Syed Nabhan** — AI Developer Intern Assessment  
