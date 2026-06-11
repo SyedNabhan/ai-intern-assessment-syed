@@ -377,8 +377,7 @@ def run_ragas(questions, answers, contexts, ground_truths):
     result = evaluate(
         dataset,
         metrics=[faithfulness, answer_relevancy, context_precision],
-        raise_exceptions=False, 
-        is_async=False            
+        raise_exceptions=False,
     )
 
     return result
@@ -387,14 +386,22 @@ def run_ragas(questions, answers, contexts, ground_truths):
 # ============================================================
 # STEP 7 — PRINT AND SAVE RESULTS
 # ============================================================
+def _mean_metric(ragas_result, metric_name: str) -> float:
+    """Average a RAGAS metric from EvaluationResult (ragas >= 0.2)."""
+    df = ragas_result.to_pandas()
+    if metric_name not in df.columns:
+        return 0.0
+    return round(float(df[metric_name].mean(skipna=True)), 4)
+
+
 def print_scores(ragas_result, out_of_scope_results):
     print(f"\n{'='*55}")
     print("RAGAS EVALUATION RESULTS")
     print(f"{'='*55}")
 
-    faithfulness_score      = round(float(ragas_result["faithfulness"]),      4)
-    answer_relevancy_score  = round(float(ragas_result["answer_relevancy"]),  4)
-    context_precision_score = round(float(ragas_result["context_precision"]), 4)
+    faithfulness_score      = _mean_metric(ragas_result, "faithfulness")
+    answer_relevancy_score  = _mean_metric(ragas_result, "answer_relevancy")
+    context_precision_score = _mean_metric(ragas_result, "context_precision")
     average = round(
         (faithfulness_score + answer_relevancy_score + context_precision_score) / 3, 4
     )

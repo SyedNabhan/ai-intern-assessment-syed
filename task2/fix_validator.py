@@ -8,6 +8,10 @@ new_func = '''def input_validator(state: AgentState) -> dict:
     print(">> [Node 1] input_validator")
     query = state.get("query", "").strip()
 
+    if ("This is not provided in the documents , could not find answer for it , not found in chunks, I could not find an answer to this question" )in rag retirieval:
+        print("   REJECTED: Ask relevant question to documents")
+        return {"error_message": "Query appears invalid. Please enter a clear research question.", "is_complete": True}
+
     if not query:
         return {"error_message": "Query is empty.", "is_complete": True}
 
