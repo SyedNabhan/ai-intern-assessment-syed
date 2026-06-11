@@ -24,6 +24,7 @@ All of this happens live — you watch the agent's reasoning step by step in the
 ---
 
 ## Demo
+![Demo screenshot](demo_overview.png)
 
 ```
 Query: "What are the latest advancements in retrieval-augmented generation for production systems?"
