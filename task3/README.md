@@ -6,6 +6,9 @@ A **Model Context Protocol (MCP) server** that gives AI clients (Cursor, MCP Ins
 
 ## What It Does
 
+![Demo screenshot](demo_screenshot3.png)
+
+
 The server exposes 6 tools over MCP:
 
 | Tool | Type | Description |
